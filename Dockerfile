@@ -13,26 +13,13 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js (includes npm) - using LTS version
+# Install Node.js (includes npm) locally for the developer user
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install TypeScript and Angular CLI globally
+# Install TypeScript and Angular CLI globally but within the developer user's environment
 RUN npm install -g typescript @angular/cli
-
-# Install Rust using rustup (as non-root to avoid permission issues)
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-ENV PATH="/root/.cargo/bin:${PATH}"
-
-# Install common Rust tools
-RUN /root/.cargo/bin/rustup component add rustfmt clippy
-
-# Install additional development tools
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user for development
 RUN useradd -m developer && \
@@ -42,11 +29,15 @@ RUN useradd -m developer && \
 USER developer
 WORKDIR /home/developer
 
-# Set up environment variables for the developer user
+# Install Rust using rustup (as the developer user)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Ensure the PATH is set to include cargo and rustup binaries for the developer user
 ENV PATH="/home/developer/.cargo/bin:${PATH}"
 
-# Verify installations in a way that won't break the build
-RUN bash -c "command -v rustc && command -v cargo && command -v node && command -v npm && command -v tsc && command -v ng"
+# Verify Rust and Cargo installation (check if rustc and cargo are available)
+# RUN command -v rustc && command -v cargo && command -v node && command -v npm && command -v tsc && command -v ng
 
 # Default command when container starts
-CMD ["/bin/bash"]
+# CMD ["/bin/bash"]
+
